@@ -1,0 +1,29 @@
+{
+  "name": "aegismint",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:coverage": "hardhat test --coverage",
+    "deploy:local": "hardhat run scripts/deploy.ts",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "verify:sepolia": "hardhat verify",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "abi:export": "node scripts/export-abis.mjs",
+    "check": "npm run compile && npm test && npm run abi:export && npm run web:build"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "3.0.7",
+    "@openzeppelin/contracts": "5.6.1",
+    "dotenv": "17.4.2",
+    "ethers": "6.17.0",
+    "hardhat": "3.11.1",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

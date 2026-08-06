@@ -1,1 +1,0 @@
-Trigger source bootstrap after staging archive.

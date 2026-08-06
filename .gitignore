@@ -1,0 +1,14 @@
+node_modules/
+web/node_modules/
+.env*
+!.env.example
+web/.env*
+!web/.env.example
+artifacts/
+cache/
+coverage/
+ignition/deployments/
+web/.next/
+web/out/
+.DS_Store
+*.log
