@@ -44,12 +44,27 @@ The marketplace stores `supportedNftContract` immutably at deployment and reject
 
 A seller may be a contract whose `receive()` deliberately reverts. Reverting the entire purchase would allow the seller to create an unbuyable listing. AegisMint instead credits `pendingProceeds[seller]`, completes the NFT transfer, and allows the seller contract to withdraw the deferred balance to a chosen recipient address.
 
+### IPFS upload boundary
+
+The Pinata JWT remains server-side. The browser receives a short-lived signed upload URL only after the API route validates the declared file name, size, and MIME type. Signed asset uploads are limited to 20 MB and an image allowlist (PNG, JPEG, WEBP, GIF). Metadata is independently validated server-side before being pinned, including bounded name/description/attributes, a valid creator address, and a direct `ipfs://CID` image URI.
+
 ### Secret management
 
 - `SEPOLIA_PRIVATE_KEY`, `ETHERSCAN_API_KEY`, and `PINATA_JWT` are server/deployment secrets.
 - No secret variable is prefixed `NEXT_PUBLIC_`.
 - `.env*` files are ignored except examples.
 - The repository contains placeholders only.
+- Deployment preflight validates the Sepolia chain, private-key format, wallet balance, and required variables without printing the private key.
+
+## Dependency risk posture
+
+Dependency security is treated separately for deployable runtime code and local development tooling.
+
+- The web application was upgraded from Next.js 16.2.12 to 16.3.0 after `npm audit` identified high-severity advisories through Next.js transitive dependencies. The locked web graph must pass `npm audit --audit-level=high` and the production Next.js build.
+- The root Hardhat package contains development dependencies only; it is not shipped as a web/runtime application. The current Hardhat Ethers+Mocha toolbox graph retains advisories in transitive test/verification dependencies, including `serialize-javascript` and legacy `@ethersproject/*` paths. npm cannot remove all of them through a compatible non-breaking lockfile fix at this time.
+- A forced transitive major override is intentionally not used simply to make an audit counter read zero. Any future toolbox/plugin upgrade must still pass Solidity compilation, all contract tests, local deployment, deployment-artifact validation, and ABI export.
+
+This is a documented residual **development-toolchain** risk, not a claim that the advisories are fixed or irrelevant.
 
 ## Test categories
 
