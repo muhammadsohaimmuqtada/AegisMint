@@ -1,0 +1,88 @@
+name: Milestone 2A bootstrap
+
+on:
+  push:
+    paths:
+      - '.github/workflows/milestone2a-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Normalize project configuration
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          # Hardhat 3.4+ deprecated network.connect(); use the current API.
+          for path in [Path('test/AegisMint.test.ts'), Path('scripts/deploy.ts')]:
+              text = path.read_text()
+              text = text.replace('await network.connect()', 'await network.create()')
+              path.write_text(text)
+
+          # Tell Turbopack exactly where the standalone Next.js application lives.
+          next_config = Path('web/next.config.ts')
+          text = next_config.read_text()
+          old = '''const nextConfig: NextConfig = {\n  poweredByHeader: false,\n  reactStrictMode: true,\n};'''
+          new = '''const nextConfig: NextConfig = {\n  poweredByHeader: false,\n  reactStrictMode: true,\n  turbopack: {\n    root: process.cwd(),\n  },\n};'''
+          if old not in text:
+              raise SystemExit('next.config.ts did not match expected baseline')
+          next_config.write_text(text.replace(old, new))
+
+          # Add one deterministic bootstrap command for fresh clones.
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          scripts = package.setdefault('scripts', {})
+          scripts['install:all'] = 'npm ci && npm --prefix web ci'
+          package_path.write_text(json.dumps(package, indent=2) + '\n')
+
+          # CI should install exactly what lockfiles describe.
+          ci_path = Path('.github/workflows/ci.yml')
+          ci = ci_path.read_text().replace('- run: npm install', '- run: npm ci')
+          ci_path.write_text(ci)
+          PY
+
+      - name: Generate deterministic lockfiles
+        shell: bash
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm --prefix web install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify deterministic installation and project checks
+        shell: bash
+        env:
+          NEXT_PUBLIC_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
+          NEXT_PUBLIC_NFT_CONTRACT_ADDRESS: 0x0000000000000000000000000000000000000000
+          NEXT_PUBLIC_MARKETPLACE_CONTRACT_ADDRESS: 0x0000000000000000000000000000000000000000
+          NEXT_PUBLIC_DEPLOYMENT_BLOCK: 0
+          NEXT_PUBLIC_PINATA_GATEWAY: example.mypinata.cloud
+        run: |
+          rm -rf node_modules web/node_modules
+          npm ci
+          npm --prefix web ci
+          npm run compile
+          npm test
+          npm run web:build
+
+      - name: Commit normalized baseline
+        shell: bash
+        run: |
+          rm .github/workflows/milestone2a-bootstrap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "build: make local and CI installs deterministic"
+          git push origin HEAD:main
