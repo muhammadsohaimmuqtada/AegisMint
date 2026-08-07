@@ -7,6 +7,14 @@ import { sepolia } from "wagmi/chains";
 import { contractsConfigured, NFT_ADDRESS, nftAbi } from "@/lib/contracts";
 import { TransactionStatus, type TransactionStage } from "./TransactionStatus";
 
+const MAX_ASSET_BYTES = 20 * 1024 * 1024;
+const ALLOWED_ASSET_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+
 export function CreateNFTForm() {
   const { address, isConnected, chainId } = useAccount();
   const publicClient = usePublicClient({ chainId: sepolia.id });
@@ -20,9 +28,13 @@ export function CreateNFTForm() {
   const [message, setMessage] = useState("");
   const [mintedToken, setMintedToken] = useState<bigint>();
 
+  const assetIsValid = Boolean(
+    file && file.size > 0 && file.size <= MAX_ASSET_BYTES && ALLOWED_ASSET_TYPES.has(file.type),
+  );
+
   const canSubmit = useMemo(
-    () => Boolean(file && name.trim() && description.trim() && isConnected && chainId === sepolia.id && contractsConfigured),
-    [file, name, description, isConnected, chainId],
+    () => Boolean(assetIsValid && name.trim() && description.trim() && isConnected && chainId === sepolia.id && contractsConfigured),
+    [assetIsValid, name, description, isConnected, chainId],
   );
 
   async function handleSubmit(event: FormEvent) {
@@ -35,12 +47,13 @@ export function CreateNFTForm() {
 
     try {
       setStage("uploading-asset");
-      if (file.size > 20 * 1024 * 1024) throw new Error("File exceeds the 20 MB upload limit");
+      if (file.size > MAX_ASSET_BYTES) throw new Error("File exceeds the 20 MB upload limit");
+      if (!ALLOWED_ASSET_TYPES.has(file.type)) throw new Error("Asset must be PNG, JPG, WEBP, or GIF");
 
       const authorizationResponse = await fetch("/api/ipfs/upload-url", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size }),
+        body: JSON.stringify({ name: file.name, size: file.size, type: file.type }),
       });
       const authorization = await authorizationResponse.json() as { url?: string; error?: string };
       if (!authorizationResponse.ok || !authorization.url) {
@@ -115,11 +128,15 @@ export function CreateNFTForm() {
       <div className="formGrid">
         <label className="uploadZone">
           <span className="eyebrow">NFT asset</span>
-          <strong>{file ? file.name : "Choose image or digital asset"}</strong>
-          <span>PNG, JPG, GIF, SVG or other file up to 20 MB</span>
+          <strong>{file ? file.name : "Choose image asset"}</strong>
+          <span>PNG, JPG, WEBP or GIF up to 20 MB</span>
           <input
             type="file"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] ?? null);
+              setMessage("");
+            }}
             required
           />
         </label>
@@ -139,6 +156,8 @@ export function CreateNFTForm() {
           </label>
         </div>
       </div>
+
+      {file && !assetIsValid ? <p className="formHint warningText">Choose a PNG, JPG, WEBP, or GIF no larger than 20 MB.</p> : null}
 
       <div className="mintSummary">
         <div>

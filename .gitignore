@@ -7,6 +7,7 @@ web/.env*
 artifacts/
 cache/
 coverage/
+types/
 ignition/deployments/
 web/.next/
 web/out/

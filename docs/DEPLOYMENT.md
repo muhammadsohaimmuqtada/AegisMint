@@ -11,35 +11,43 @@ ETHERSCAN_API_KEY=...
 MARKETPLACE_FEE_BPS=250
 ```
 
-Use a dedicated Sepolia wallet. Never commit the file.
+Use a dedicated Sepolia-only deployment wallet. Never commit `.env`, private keys, Pinata JWTs, or provider secrets.
 
-## 2. Install and test
+## 2. Deterministic install and local verification
+
+The repository commits root and web lockfiles. Fresh clones should use the lockfile-backed install command:
 
 ```bash
-npm install
-npm --prefix web install
+npm run install:all
 npm run compile
 npm test
-npm run test:coverage
+npm run web:build
 ```
 
-Do not deploy if tests fail.
+`npm run install:all` runs `npm ci` for both the Hardhat project and the Next.js app. Do not deploy if compilation, tests, or the production web build fails.
 
-## 3. Deploy to Sepolia
+## 3. Sepolia preflight
+
+Before spending testnet ETH, verify that the selected network, deployment key, RPC connection, wallet balance, fee configuration, and Etherscan configuration are sane:
+
+```bash
+npm run deploy:preflight
+```
+
+The preflight refuses to continue if the selected chain is not Sepolia, the private key format is invalid, required deployment variables are missing, or the deployment wallet has zero Sepolia ETH. It never prints the private key.
+
+## 4. Deploy to Sepolia
 
 ```bash
 npm run deploy:sepolia
 ```
 
-The deployment script writes `deployments/<chainId>.json` with:
+The deployment script only permits the local Hardhat chain or Sepolia. It verifies that runtime bytecode exists at both deployed addresses and writes:
 
-- deployer address
-- AegisNFT address and deployment transaction hash
-- AegisMarketplace address, constructor arguments, and deployment transaction hash
-- deployment block
-- snapshotted marketplace fee
+- `deployments/<chainId>.json` — addresses, deployment transaction hashes, deployment blocks, constructor arguments, deployer, and marketplace fee
+- `deployments/<chainId>.frontend.env` — non-secret NFT address, marketplace address, and deployment block ready to copy into the frontend environment
 
-## 4. Export ABIs
+## 5. Export ABIs
 
 ```bash
 npm run abi:export
@@ -47,7 +55,7 @@ npm run abi:export
 
 This writes compiler-generated ABI JSON files into `web/abi/`.
 
-## 5. Verify on Etherscan
+## 6. Verify on Etherscan
 
 NFT has no constructor arguments:
 
@@ -65,7 +73,7 @@ npx hardhat verify --network sepolia \
   250
 ```
 
-## 6. Configure the web app
+## 7. Configure Pinata and the web app
 
 Create `web/.env.local`:
 
@@ -79,6 +87,8 @@ PINATA_JWT=...
 PINATA_GATEWAY=your-gateway.mypinata.cloud
 ```
 
+`PINATA_JWT` is server-only. The browser requests a short-lived signed upload URL from AegisMint, then uploads directly to Pinata. Signed URLs enforce the declared file size and an allowlist of PNG, JPEG, WEBP, and GIF MIME types. Metadata is uploaded separately by the server and the ERC-721 stores the resulting `ipfs://CID` URI.
+
 Then:
 
 ```bash
@@ -86,11 +96,11 @@ npm run web:build
 npm run web:dev
 ```
 
-## 7. Vercel
+## 8. Vercel
 
-Import the GitHub repository, set the Root Directory to `web`, and add the same web environment variables in Vercel. `PINATA_JWT` must remain server-only.
+Import the GitHub repository, set the Root Directory to `web`, and add the same web environment variables in Vercel. `PINATA_JWT` and `PINATA_GATEWAY` are server-side settings; only values prefixed with `NEXT_PUBLIC_` are exposed to the browser.
 
-## 8. Two-wallet acceptance test
+## 9. Two-wallet acceptance test
 
 Use two independent MetaMask accounts.
 
@@ -106,6 +116,6 @@ Use two independent MetaMask accounts.
 10. Verify mint/list/sale/transfer events on Sepolia Etherscan.
 11. Verify the Trust Center and provenance timeline match on-chain history.
 
-## 9. Final repository update
+## 10. Final repository update
 
 Replace all `TBD` deployment entries in the root README with real addresses/links before submission.
