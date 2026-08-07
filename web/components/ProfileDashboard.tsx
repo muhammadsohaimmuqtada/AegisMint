@@ -35,21 +35,23 @@ export function ProfileDashboard() {
       return;
     }
 
+    const publicClient = client;
+
     async function load() {
       setLoading(true);
       setError("");
       try {
         const fromBlock = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK || "0");
         const [mints, listingLogs, saleLogs] = await Promise.all([
-          client.getLogs({ address: NFT_ADDRESS, event: mintedEvent, fromBlock, toBlock: "latest" }),
-          client.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, fromBlock, toBlock: "latest" }),
-          client.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, fromBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: NFT_ADDRESS, event: mintedEvent, fromBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, fromBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, fromBlock, toBlock: "latest" }),
         ]);
 
         const tokenIds = [...new Set(mints.map((log) => log.args.tokenId).filter((id): id is bigint => id !== undefined))];
         const ownerResults = await Promise.all(tokenIds.map(async (tokenId) => {
           try {
-            const owner = await client.readContract({ address: NFT_ADDRESS, abi: nftAbi, functionName: "ownerOf", args: [tokenId] });
+            const owner = await publicClient.readContract({ address: NFT_ADDRESS, abi: nftAbi, functionName: "ownerOf", args: [tokenId] });
             return { tokenId, owner };
           } catch {
             return null;
@@ -66,7 +68,7 @@ export function ProfileDashboard() {
           .filter((id): id is bigint => id !== undefined);
         const listingStates = await Promise.all(myListingIds.map(async (listingId) => {
           try {
-            return await client.readContract({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "getListing", args: [listingId] }) as Listing;
+            return await publicClient.readContract({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "getListing", args: [listingId] }) as Listing;
           } catch {
             return null;
           }

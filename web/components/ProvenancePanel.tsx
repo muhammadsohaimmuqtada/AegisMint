@@ -27,16 +27,17 @@ export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address
     let cancelled = false;
     if (!client || !contractsConfigured) return;
 
+    const publicClient = client;
     const deploymentBlock = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK || "0");
 
     async function load() {
       setLoading(true);
       try {
         const [transfers, listings, sales, cancellations] = await Promise.all([
-          client.getLogs({ address: nftContract, event: transferEvent, args: { tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
-          client.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
-          client.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
-          client.getLogs({ address: MARKETPLACE_ADDRESS, event: cancelledEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: nftContract, event: transferEvent, args: { tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: cancelledEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
         ]);
 
         const rows: Activity[] = [];
