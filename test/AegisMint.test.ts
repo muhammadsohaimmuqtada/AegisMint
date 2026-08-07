@@ -294,7 +294,9 @@ describe("AegisMarketplace — fees and administration", function () {
 
   it("prevents non-owner fee changes", async function () {
     const { other, marketplace } = await deploySystem();
-    await expect(marketplace.connect(other).setMarketplaceFee(100)).to.be.reverted;
+    await expect(marketplace.connect(other).setMarketplaceFee(100))
+    .to.be.revertedWithCustomError(marketplace, "OwnableUnauthorizedAccount")
+    .withArgs(other.address);
   });
 
   it("lets the owner withdraw only accrued marketplace fees", async function () {
