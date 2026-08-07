@@ -20,6 +20,12 @@ jobs:
       - run: npm ci
       - run: npm run compile
       - run: npm test
+      - run: npm run deploy:local
+      - name: Verify deployment artifacts
+        run: |
+          test -s deployments/31337.json
+          test -s deployments/31337.frontend.env
+      - run: npm run abi:export
 
   web:
     runs-on: ubuntu-latest
