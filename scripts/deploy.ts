@@ -2,7 +2,7 @@ import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import { network } from "hardhat";
 
-const { ethers } = await network.connect();
+const { ethers } = await network.create();
 const [deployer] = await ethers.getSigners();
 const feeBps = BigInt(process.env.MARKETPLACE_FEE_BPS ?? "250");
 

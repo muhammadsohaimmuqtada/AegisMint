@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { network } from "hardhat";
 
-const { ethers } = await network.connect();
+const { ethers } = await network.create();
 
 const URI_ONE = "ipfs://bafybeigdyrzt5-example-metadata-1";
 const URI_TWO = "ipfs://bafybeigdyrzt5-example-metadata-2";

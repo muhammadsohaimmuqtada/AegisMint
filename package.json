@@ -13,7 +13,8 @@
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
     "abi:export": "node scripts/export-abis.mjs",
-    "check": "npm run compile && npm test && npm run abi:export && npm run web:build"
+    "check": "npm run compile && npm test && npm run abi:export && npm run web:build",
+    "install:all": "npm ci && npm --prefix web ci"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "3.0.7",
