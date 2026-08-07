@@ -9,6 +9,8 @@ cache/
 coverage/
 types/
 ignition/deployments/
+deployments/31337.json
+deployments/31337.frontend.env
 web/.next/
 web/out/
 .DS_Store
