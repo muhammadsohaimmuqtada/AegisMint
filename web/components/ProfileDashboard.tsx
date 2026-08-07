@@ -36,6 +36,7 @@ export function ProfileDashboard() {
     }
 
     const publicClient = client;
+    const walletAddress = address;
 
     async function load() {
       setLoading(true);
@@ -59,11 +60,11 @@ export function ProfileDashboard() {
         }));
         const owned = ownerResults
           .filter((result): result is { tokenId: bigint; owner: `0x${string}` } => Boolean(result))
-          .filter((result) => result.owner.toLowerCase() === address.toLowerCase())
+          .filter((result) => result.owner.toLowerCase() === walletAddress.toLowerCase())
           .map((result) => result.tokenId);
 
         const myListingIds = listingLogs
-          .filter((log) => log.args.seller?.toLowerCase() === address.toLowerCase())
+          .filter((log) => log.args.seller?.toLowerCase() === walletAddress.toLowerCase())
           .map((log) => log.args.listingId)
           .filter((id): id is bigint => id !== undefined);
         const listingStates = await Promise.all(myListingIds.map(async (listingId) => {
@@ -76,10 +77,10 @@ export function ProfileDashboard() {
         const activeListings = listingStates.filter((listing): listing is Listing => Boolean(listing?.active));
 
         const purchased = saleLogs
-          .filter((log) => log.args.buyer?.toLowerCase() === address.toLowerCase())
+          .filter((log) => log.args.buyer?.toLowerCase() === walletAddress.toLowerCase())
           .map((log) => ({ listingId: log.args.listingId!, tokenId: log.args.tokenId!, price: log.args.price! }));
         const sold = saleLogs
-          .filter((log) => log.args.seller?.toLowerCase() === address.toLowerCase())
+          .filter((log) => log.args.seller?.toLowerCase() === walletAddress.toLowerCase())
           .map((log) => ({ listingId: log.args.listingId!, tokenId: log.args.tokenId!, price: log.args.price! }));
         const salesVolume = sold.reduce((sum, sale) => sum + sale.price, 0n);
 
