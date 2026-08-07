@@ -42,17 +42,20 @@ jobs:
               raise SystemExit('next.config.ts did not match expected baseline')
           next_config.write_text(text.replace(old, new))
 
+          # Keep Next from rewriting tsconfig during every clean build.
+          tsconfig = Path('web/tsconfig.json')
+          ts = tsconfig.read_text()
+          old_include = '"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"]'
+          new_include = '"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"]'
+          if old_include not in ts:
+              raise SystemExit('web/tsconfig.json did not match expected baseline')
+          tsconfig.write_text(ts.replace(old_include, new_include))
+
           # Add one deterministic bootstrap command for fresh clones.
           package_path = Path('package.json')
           package = json.loads(package_path.read_text())
-          scripts = package.setdefault('scripts', {})
-          scripts['install:all'] = 'npm ci && npm --prefix web ci'
+          package.setdefault('scripts', {})['install:all'] = 'npm ci && npm --prefix web ci'
           package_path.write_text(json.dumps(package, indent=2) + '\n')
-
-          # CI should install exactly what lockfiles describe.
-          ci_path = Path('.github/workflows/ci.yml')
-          ci = ci_path.read_text().replace('- run: npm install', '- run: npm ci')
-          ci_path.write_text(ci)
           PY
 
       - name: Generate deterministic lockfiles
@@ -80,9 +83,11 @@ jobs:
       - name: Commit normalized baseline
         shell: bash
         run: |
+          # Generated Hardhat type bindings are build output, not source.
+          rm -rf types
           rm .github/workflows/milestone2a-bootstrap.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "build: make local and CI installs deterministic"
+          git commit -m "build: make local installs deterministic"
           git push origin HEAD:main
