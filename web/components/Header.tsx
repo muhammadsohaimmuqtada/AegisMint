@@ -9,9 +9,9 @@ export function Header() {
         <span>AegisMint</span>
       </Link>
       <nav className="navLinks" aria-label="Primary navigation">
-        <Link href="/explore">Explore</Link>
+        <Link href="/explore">Market</Link>
         <Link href="/create">Create</Link>
-        <Link href="/profile">Dashboard</Link>
+        <Link href="/profile">Portfolio</Link>
       </nav>
       <WalletButton />
     </header>
