@@ -15,18 +15,19 @@ export type NFTMetadata = {
   creator?: string;
 };
 
-export function NFTCard({ listing }: { listing: Listing }) {
+export function NFTCard({ listing, prefetchedMetadata }: { listing: Listing; prefetchedMetadata?: NFTMetadata | null }) {
   const { data: tokenUri } = useReadContract({
     address: listing.nftContract,
     abi: nftAbi,
     functionName: "tokenURI",
     args: [listing.tokenId],
+    query: { enabled: prefetchedMetadata === undefined },
   });
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    if (!tokenUri) return;
+    if (prefetchedMetadata !== undefined || !tokenUri) return;
 
     fetch(ipfsToHttp(tokenUri))
       .then((response) => {
@@ -39,14 +40,16 @@ export function NFTCard({ listing }: { listing: Listing }) {
     return () => {
       cancelled = true;
     };
-  }, [tokenUri]);
+  }, [prefetchedMetadata, tokenUri]);
+
+  const resolvedMetadata = prefetchedMetadata !== undefined ? prefetchedMetadata : metadata;
 
   return (
     <Link className="nftCard" href={`/nft/${listing.tokenId}?listing=${listing.id}`}>
       <div className="nftMedia">
-        {metadata?.image ? (
+        {resolvedMetadata?.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={ipfsToHttp(metadata.image)} alt={metadata.name || `NFT #${listing.tokenId}`} />
+          <img src={ipfsToHttp(resolvedMetadata.image)} alt={resolvedMetadata.name || `NFT #${listing.tokenId}`} />
         ) : (
           <div className="nftPlaceholder">AEGIS / {listing.tokenId.toString()}</div>
         )}
@@ -55,7 +58,7 @@ export function NFTCard({ listing }: { listing: Listing }) {
         <div className="nftTitleRow">
           <div>
             <span className="nftCollection">Work #{listing.tokenId.toString()}</span>
-            <h3>{metadata?.name || `Token #${listing.tokenId}`}</h3>
+            <h3>{resolvedMetadata?.name || `Token #${listing.tokenId}`}</h3>
           </div>
           <span className="availableBadge">Listed</span>
         </div>

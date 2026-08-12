@@ -22,6 +22,7 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
   const client = usePublicClient({ chainId: sepolia.id });
   const { writeContractAsync } = useWriteContract();
   const [metadata, setMetadata] = useState<NFTMetadata | null>(null);
+  const [metadataError, setMetadataError] = useState(false);
   const [price, setPrice] = useState("0.01");
   const [stage, setStage] = useState<TransactionStage>("idle");
   const [hash, setHash] = useState<`0x${string}`>();
@@ -43,16 +44,19 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
     abi: marketplaceAbi,
     functionName: "getListing",
     args: [listingId],
-    query: { enabled: contractsConfigured && listingId > 0n },
+    query: { enabled: contractsConfigured && listingId > 0n, refetchInterval: listingId > 0n ? 10_000 : false },
   });
-  const listing = listingQuery.data as Listing | undefined;
+  const listing = listingId > 0n ? listingQuery.data as Listing | undefined : undefined;
 
   useEffect(() => {
+    let cancelled = false;
     if (!tokenUriQuery.data) return;
+    setMetadataError(false);
     fetch(ipfsToHttp(tokenUriQuery.data))
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Metadata unavailable")))
-      .then(setMetadata)
-      .catch(() => setMetadata(null));
+      .then((value) => { if (!cancelled) setMetadata(value); })
+      .catch(() => { if (!cancelled) { setMetadata(null); setMetadataError(true); } });
+    return () => { cancelled = true; };
   }, [tokenUriQuery.data]);
 
   const isOwner = useMemo(
@@ -65,19 +69,26 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
   );
   const listingFee = listing ? (listing.price * listing.feeBps) / 10_000n : 0n;
   const sellerProceeds = listing ? listing.price - listingFee : 0n;
+  const transactionBusy = stage === "pending" || stage === "awaiting-wallet";
+
+  async function refreshMarketState() {
+    await ownerQuery.refetch();
+    await listingIdQuery.refetch();
+  }
 
   async function runTx(label: string, action: () => Promise<`0x${string}`>) {
     if (!client) return;
     try {
+      setHash(undefined);
       setStage("awaiting-wallet");
       setMessage(label);
       const txHash = await action();
       setHash(txHash);
       setStage("pending");
       await client.waitForTransactionReceipt({ hash: txHash, confirmations: 1 });
+      await refreshMarketState();
       setStage("confirmed");
       setMessage(`${label} confirmed on Sepolia.`);
-      await Promise.all([ownerQuery.refetch(), listingIdQuery.refetch(), listingQuery.refetch()]);
     } catch (error) {
       setStage("error");
       setMessage(error instanceof Error ? error.message : `${label} failed`);
@@ -86,10 +97,10 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
 
   async function listForSale(event: FormEvent) {
     event.preventDefault();
-    if (!address || chainId !== sepolia.id) return;
+    if (!address || chainId !== sepolia.id || !client) return;
     let wei: bigint;
     try {
-      wei = parseEther(price);
+      wei = parseEther(price.trim());
       if (wei <= 0n) throw new Error();
     } catch {
       setStage("error");
@@ -98,6 +109,7 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
     }
 
     try {
+      setHash(undefined);
       setStage("awaiting-wallet");
       setMessage("Approve AegisMarketplace to escrow this NFT.");
       const approvalHash = await writeContractAsync({
@@ -110,11 +122,10 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
       });
       setHash(approvalHash);
       setStage("pending");
-      if (!client) return;
       await client.waitForTransactionReceipt({ hash: approvalHash, confirmations: 1 });
 
       setStage("awaiting-wallet");
-      setMessage("Approval confirmed. Now confirm the listing transaction.");
+      setMessage("Approval confirmed. Confirm the listing transaction.");
       const listingHash = await writeContractAsync({
         address: MARKETPLACE_ADDRESS,
         abi: marketplaceAbi,
@@ -126,9 +137,9 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
       setHash(listingHash);
       setStage("pending");
       await client.waitForTransactionReceipt({ hash: listingHash, confirmations: 1 });
+      await refreshMarketState();
       setStage("confirmed");
       setMessage("NFT is now escrowed and listed on AegisMint.");
-      await Promise.all([ownerQuery.refetch(), listingIdQuery.refetch()]);
     } catch (error) {
       setStage("error");
       setMessage(error instanceof Error ? error.message : "Listing failed");
@@ -136,15 +147,15 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
   }
 
   if (!contractsConfigured) {
-    return <div className="emptyState"><h3>Contracts unavailable</h3><p>The Sepolia deployment is not configured for this environment.</p></div>;
+    return <div className="emptyState refinedState"><h3>Contracts unavailable</h3><p>The Sepolia deployment is not configured for this environment.</p></div>;
   }
 
   if (tokenUriQuery.isPending || ownerQuery.isPending) {
-    return <div className="detailSkeleton" />;
+    return <div className="detailSkeleton" aria-label="Loading artwork" aria-busy="true" />;
   }
 
   if (tokenUriQuery.isError || ownerQuery.isError) {
-    return <div className="emptyState"><h3>Work not found</h3><p>Token #{tokenId.toString()} does not exist on the configured collection.</p></div>;
+    return <div className="emptyState refinedState"><span className="eyebrow">Collection lookup</span><h3>Work not found</h3><p>Token #{tokenId.toString()} does not exist on the configured AegisMint collection.</p></div>;
   }
 
   return (
@@ -160,7 +171,7 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
         <div className="detailContent">
           <span className="eyebrow">AegisMint / Work #{tokenId.toString()}</span>
           <h1>{metadata?.name || `Token #${tokenId.toString()}`}</h1>
-          <p className="detailDescription">{metadata?.description || "Metadata is loading from IPFS."}</p>
+          <p className="detailDescription">{metadata?.description || (metadataError ? "The on-chain token exists, but its IPFS metadata could not be resolved through the configured gateway." : "Metadata is loading from IPFS.")}</p>
 
           <div className="identityGrid" aria-label="Ownership record">
             <div><span>Creator</span><strong>{shortAddress(creatorQuery.data)}</strong></div>
@@ -177,18 +188,20 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
                 <span>Seller proceeds {formatEther(sellerProceeds)} ETH</span>
               </div>
               {isSeller ? (
-                <button className="secondaryButton" disabled={stage === "pending" || stage === "awaiting-wallet"} onClick={() => address && runTx("Cancel listing", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "cancelListing", args: [listing.id], account: address, chain: sepolia }))}>Cancel listing</button>
+                <button className="secondaryButton" disabled={transactionBusy} onClick={() => address && runTx("Cancel listing", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "cancelListing", args: [listing.id], account: address, chain: sepolia }))}>Cancel listing</button>
               ) : (
-                <button className="primaryButton" disabled={!isConnected || chainId !== sepolia.id || stage === "pending" || stage === "awaiting-wallet"} onClick={() => address && runTx("Purchase", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "buyNFT", args: [listing.id], value: listing.price, account: address, chain: sepolia }))}>Acquire</button>
+                <button className="primaryButton" disabled={!isConnected || chainId !== sepolia.id || transactionBusy} onClick={() => address && runTx("Purchase", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "buyNFT", args: [listing.id], value: listing.price, account: address, chain: sepolia }))}>Acquire</button>
               )}
             </div>
           ) : isOwner ? (
             <form className="saleBox listingForm" onSubmit={listForSale}>
-              <label><span>Offer for sale</span><div className="priceInput"><input value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" /><strong>ETH</strong></div></label>
-              <button className="primaryButton" type="submit" disabled={!isConnected || chainId !== sepolia.id || stage === "pending" || stage === "awaiting-wallet"}>Approve & list</button>
+              <label><span>Offer for sale</span><div className="priceInput"><input value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" aria-label="Listing price in ETH" autoComplete="off" /><strong>ETH</strong></div></label>
+              <button className="primaryButton" type="submit" disabled={!isConnected || chainId !== sepolia.id || transactionBusy}>Approve & list</button>
             </form>
           ) : null}
 
+          {!isConnected && listing?.active ? <p className="actionHint">Connect a wallet to acquire this work.</p> : null}
+          {isConnected && chainId !== sepolia.id ? <p className="actionHint warningText">Switch your wallet to Ethereum Sepolia before submitting a market transaction.</p> : null}
           <TransactionStatus stage={stage} hash={hash} message={message} />
         </div>
       </div>

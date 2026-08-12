@@ -1,8 +1,13 @@
+import Link from "next/link";
 import { ContractGate } from "@/components/ContractGate";
 import { MarketplaceGrid } from "@/components/MarketplaceGrid";
 import { MarketplaceStats } from "@/components/MarketplaceStats";
 
-export default function ExplorePage() {
+export default async function ExplorePage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const params = await searchParams;
+  const query = Array.isArray(params.q) ? (params.q[0] ?? "") : (params.q ?? "");
+  const normalizedQuery = query.trim();
+
   return (
     <main className="pageShell innerPage premiumMarketPage">
       <div className="pageIntro premiumPageIntro">
@@ -15,13 +20,13 @@ export default function ExplorePage() {
 
       <div className="sectionHeading splitHeading exploreHeading">
         <div>
-          <span className="sectionKicker">Available now</span>
-          <h2>Live works</h2>
+          <span className="sectionKicker">{normalizedQuery ? "Search results" : "Available now"}</span>
+          <h2>{normalizedQuery ? `“${normalizedQuery}”` : "Live works"}</h2>
         </div>
-        <span className="liveLabel"><i /> Live on-chain</span>
+        {normalizedQuery ? <Link className="marketClearLink" href="/explore">Clear search ×</Link> : <span className="liveLabel"><i /> Live on-chain</span>}
       </div>
 
-      <ContractGate><MarketplaceGrid limit={100} /></ContractGate>
+      <ContractGate><MarketplaceGrid limit={100} query={normalizedQuery} /></ContractGate>
     </main>
   );
 }
