@@ -136,7 +136,7 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
   }
 
   if (!contractsConfigured) {
-    return <div className="emptyState"><h3>Deploy contracts first</h3><p>This view becomes live after Sepolia contract addresses are configured.</p></div>;
+    return <div className="emptyState"><h3>Contracts unavailable</h3><p>The Sepolia deployment is not configured for this environment.</p></div>;
   }
 
   if (tokenUriQuery.isPending || ownerQuery.isPending) {
@@ -144,7 +144,7 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
   }
 
   if (tokenUriQuery.isError || ownerQuery.isError) {
-    return <div className="emptyState"><h3>NFT not found</h3><p>Token #{tokenId.toString()} does not exist on the configured contract.</p></div>;
+    return <div className="emptyState"><h3>Work not found</h3><p>Token #{tokenId.toString()} does not exist on the configured collection.</p></div>;
   }
 
   return (
@@ -158,33 +158,33 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
         </div>
 
         <div className="detailContent">
-          <span className="eyebrow">AegisMint / Token #{tokenId.toString()}</span>
+          <span className="eyebrow">AegisMint / Work #{tokenId.toString()}</span>
           <h1>{metadata?.name || `Token #${tokenId.toString()}`}</h1>
           <p className="detailDescription">{metadata?.description || "Metadata is loading from IPFS."}</p>
 
-          <div className="identityGrid">
+          <div className="identityGrid" aria-label="Ownership record">
             <div><span>Creator</span><strong>{shortAddress(creatorQuery.data)}</strong></div>
             <div><span>Current owner</span><strong>{shortAddress(ownerQuery.data)}</strong></div>
-            <div><span>Status</span><strong>{listing?.active ? "Available" : "Owned"}</strong></div>
-            <div><span>Network</span><strong>Sepolia</strong></div>
+            <div><span>Market state</span><strong>{listing?.active ? "Listed" : "Held"}</strong></div>
+            <div><span>Network</span><strong>Ethereum Sepolia</strong></div>
           </div>
 
           {listing?.active ? (
             <div className="saleBox">
-              <div className="salePrice"><span>Current price</span><strong>{formatEther(listing.price)} ETH</strong></div>
+              <div className="salePrice"><span>Asking price</span><strong>{formatEther(listing.price)} ETH</strong></div>
               <div className="saleBreakdown">
-                <span>Fee {(Number(listing.feeBps) / 100).toFixed(2)}% · {formatEther(listingFee)} ETH</span>
-                <span>Seller receives {formatEther(sellerProceeds)} ETH</span>
+                <span>Market fee {(Number(listing.feeBps) / 100).toFixed(2)}% · {formatEther(listingFee)} ETH</span>
+                <span>Seller proceeds {formatEther(sellerProceeds)} ETH</span>
               </div>
               {isSeller ? (
                 <button className="secondaryButton" disabled={stage === "pending" || stage === "awaiting-wallet"} onClick={() => address && runTx("Cancel listing", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "cancelListing", args: [listing.id], account: address, chain: sepolia }))}>Cancel listing</button>
               ) : (
-                <button className="primaryButton" disabled={!isConnected || chainId !== sepolia.id || stage === "pending" || stage === "awaiting-wallet"} onClick={() => address && runTx("Purchase", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "buyNFT", args: [listing.id], value: listing.price, account: address, chain: sepolia }))}>Buy now</button>
+                <button className="primaryButton" disabled={!isConnected || chainId !== sepolia.id || stage === "pending" || stage === "awaiting-wallet"} onClick={() => address && runTx("Purchase", () => writeContractAsync({ address: MARKETPLACE_ADDRESS, abi: marketplaceAbi, functionName: "buyNFT", args: [listing.id], value: listing.price, account: address, chain: sepolia }))}>Acquire</button>
               )}
             </div>
           ) : isOwner ? (
             <form className="saleBox listingForm" onSubmit={listForSale}>
-              <label><span>List for sale</span><div className="priceInput"><input value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" /><strong>ETH</strong></div></label>
+              <label><span>Offer for sale</span><div className="priceInput"><input value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" /><strong>ETH</strong></div></label>
               <button className="primaryButton" type="submit" disabled={!isConnected || chainId !== sepolia.id || stage === "pending" || stage === "awaiting-wallet"}>Approve & list</button>
             </form>
           ) : null}
@@ -195,13 +195,13 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
 
       <div className="detailLowerGrid">
         <section className="trustPanel">
-          <div className="sectionHeading compactHeading"><span className="eyebrow">Trust center</span><h2>Verify, don’t trust</h2></div>
+          <div className="sectionHeading compactHeading"><span className="eyebrow">On-chain record</span><h2>Ownership registry</h2></div>
           <div className="verificationList">
-            <Verification label="ERC-721 ownership" value="Verified on-chain" />
-            <Verification label="Metadata" value={tokenUriQuery.data || "—"} mono />
-            <Verification label="Asset storage" value={metadata?.image || "—"} mono />
-            <Verification label="NFT contract" value={NFT_ADDRESS} mono href={`https://sepolia.etherscan.io/address/${NFT_ADDRESS}`} />
-            <Verification label="Marketplace" value={MARKETPLACE_ADDRESS} mono href={`https://sepolia.etherscan.io/address/${MARKETPLACE_ADDRESS}`} />
+            <Verification label="ERC-721 state" value="Verified on-chain" />
+            <Verification label="Metadata URI" value={tokenUriQuery.data || "—"} mono />
+            <Verification label="Asset URI" value={metadata?.image || "—"} mono />
+            <Verification label="Collection" value={NFT_ADDRESS} mono href={`https://sepolia.etherscan.io/address/${NFT_ADDRESS}`} />
+            <Verification label="Market contract" value={MARKETPLACE_ADDRESS} mono href={`https://sepolia.etherscan.io/address/${MARKETPLACE_ADDRESS}`} />
           </div>
         </section>
         <ProvenancePanel nftContract={NFT_ADDRESS as Address} tokenId={tokenId} />
@@ -212,5 +212,5 @@ export function NFTDetailClient({ tokenId }: { tokenId: bigint }) {
 
 function Verification({ label, value, mono, href }: { label: string; value: string; mono?: boolean; href?: string }) {
   const content = <strong className={mono ? "mono" : ""}>{value}</strong>;
-  return <div className="verificationRow"><span><i>✓</i>{label}</span>{href ? <a href={href} target="_blank" rel="noreferrer">{content} ↗</a> : content}</div>;
+  return <div className="verificationRow"><span><i>●</i>{label}</span>{href ? <a href={href} target="_blank" rel="noreferrer">{content} ↗</a> : content}</div>;
 }
