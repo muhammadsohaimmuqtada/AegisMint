@@ -1,114 +1,73 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseAbiItem, zeroAddress, type Address } from "viem";
-import { usePublicClient } from "wagmi";
-import { MARKETPLACE_ADDRESS, contractsConfigured } from "@/lib/contracts";
-import { shortAddress } from "@/lib/ipfs";
-import { getLogsInChunks } from "@/lib/logs";
-
-const transferEvent = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)");
-const listedEvent = parseAbiItem("event NFTListed(uint256 indexed listingId, address indexed nftContract, uint256 indexed tokenId, address seller, uint256 price)");
-const soldEvent = parseAbiItem("event NFTSold(uint256 indexed listingId, address indexed nftContract, uint256 indexed tokenId, address seller, address buyer, uint256 price, uint256 marketplaceFee)");
-const cancelledEvent = parseAbiItem("event ListingCancelled(uint256 indexed listingId, address indexed nftContract, uint256 indexed tokenId, address seller)");
+import type { Address } from "viem";
+import { contractsConfigured } from "@/lib/contracts";
 
 type Activity = {
   key: string;
-  block: bigint;
   label: string;
   detail: string;
+  block?: string;
+  timestamp?: string;
+  hash?: string;
 };
 
-export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address; tokenId: bigint }) {
-  const client = usePublicClient();
+type ProvenancePayload = {
+  coverage?: "transfer-history" | "marketplace-state";
+  rows?: Activity[];
+  error?: string;
+};
+
+export function ProvenancePanel({ nftContract: _nftContract, tokenId }: { nftContract: Address; tokenId: bigint }) {
   const [activity, setActivity] = useState<Activity[]>([]);
+  const [coverage, setCoverage] = useState<"transfer-history" | "marketplace-state">("marketplace-state");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    let cancelled = false;
-    if (!client || !contractsConfigured) return;
-
-    const publicClient = client;
-    const deploymentBlock = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK || "0");
+    const controller = new AbortController();
+    if (!contractsConfigured) {
+      setLoading(false);
+      return () => controller.abort();
+    }
 
     async function load() {
       setLoading(true);
+      setError("");
       try {
-        const latestBlock = await publicClient.getBlockNumber();
-        const [transfers, listings, sales, cancellations] = await Promise.all([
-          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
-            publicClient.getLogs({ address: nftContract, event: transferEvent, args: { tokenId }, fromBlock: start, toBlock: end }),
-          ),
-          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
-            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, args: { nftContract, tokenId }, fromBlock: start, toBlock: end }),
-          ),
-          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
-            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, args: { nftContract, tokenId }, fromBlock: start, toBlock: end }),
-          ),
-          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
-            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: cancelledEvent, args: { nftContract, tokenId }, fromBlock: start, toBlock: end }),
-          ),
-        ]);
-
-        const rows: Activity[] = [];
-        for (const log of transfers) {
-          const from = log.args.from;
-          const to = log.args.to;
-          rows.push({
-            key: `${log.transactionHash}-transfer-${log.logIndex}`,
-            block: log.blockNumber,
-            label: from === zeroAddress ? "Minted" : "Ownership transfer",
-            detail: from === zeroAddress ? `Creator ${shortAddress(to)}` : `${shortAddress(from)} → ${shortAddress(to)}`,
-          });
+        const response = await fetch(`/api/provenance?tokenId=${tokenId.toString()}`, { cache: "no-store", signal: controller.signal });
+        const payload = await response.json() as ProvenancePayload;
+        if (!response.ok) throw new Error(payload.error || "Provenance could not be loaded.");
+        if (!controller.signal.aborted) {
+          setActivity(payload.rows ?? []);
+          setCoverage(payload.coverage ?? "marketplace-state");
         }
-        for (const log of listings) {
-          rows.push({
-            key: `${log.transactionHash}-listed-${log.logIndex}`,
-            block: log.blockNumber,
-            label: "Listed",
-            detail: `Listing #${log.args.listingId?.toString()} · seller ${shortAddress(log.args.seller)}`,
-          });
-        }
-        for (const log of sales) {
-          rows.push({
-            key: `${log.transactionHash}-sold-${log.logIndex}`,
-            block: log.blockNumber,
-            label: "Sale settled",
-            detail: `${shortAddress(log.args.seller)} → ${shortAddress(log.args.buyer)}`,
-          });
-        }
-        for (const log of cancellations) {
-          rows.push({
-            key: `${log.transactionHash}-cancel-${log.logIndex}`,
-            block: log.blockNumber,
-            label: "Listing cancelled",
-            detail: `Returned to ${shortAddress(log.args.seller)}`,
-          });
-        }
-
-        rows.sort((a, b) => (a.block < b.block ? -1 : a.block > b.block ? 1 : 0));
-        if (!cancelled) setActivity(rows);
-      } catch {
-        if (!cancelled) setActivity([]);
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Provenance could not be loaded.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
     void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [client, nftContract, tokenId]);
+    return () => controller.abort();
+  }, [tokenId]);
 
   return (
-    <section className="trustPanel">
-      <div className="sectionHeading compactHeading">
-        <span className="eyebrow">Provenance</span>
-        <h2>Transaction history</h2>
+    <section className="trustPanel provenancePanel">
+      <div className="sectionHeading compactHeading provenanceHeading">
+        <div>
+          <span className="eyebrow">Provenance</span>
+          <h2>Ownership history</h2>
+        </div>
+        {!loading && !error ? <span className="coverageBadge">{coverage === "transfer-history" ? "ERC-721 transfers" : "Market state"}</span> : null}
       </div>
-      {loading ? <p className="muted">Reading contract events…</p> : null}
-      {!loading && !activity.length ? <p className="muted">No recorded activity returned by the configured RPC.</p> : null}
+
+      {loading ? <div className="timelineSkeleton" aria-busy="true"><span /><span /><span /></div> : null}
+      {error ? <div className="provenanceError"><strong>History temporarily unavailable</strong><p>{error}</p></div> : null}
+      {!loading && !error && !activity.length ? <p className="muted">No provenance records were returned for this token.</p> : null}
+
       <div className="timeline">
         {activity.map((item) => (
           <div className="timelineItem" key={item.key}>
@@ -116,11 +75,24 @@ export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address
             <div>
               <strong>{item.label}</strong>
               <p>{item.detail}</p>
-              <span>Block {item.block.toString()}</span>
+              <span className="timelineMeta">
+                {item.block ? `Block ${item.block}` : item.timestamp ? formatTimestamp(item.timestamp) : "On-chain state"}
+                {item.hash ? <a href={`https://sepolia.etherscan.io/tx/${item.hash}`} target="_blank" rel="noreferrer">Transaction ↗</a> : null}
+              </span>
             </div>
           </div>
         ))}
       </div>
+
+      {!loading && !error && coverage === "marketplace-state" ? (
+        <p className="coverageNote">Marketplace lifecycle and current ownership are canonical. Enhanced ERC-721 transfer history was unavailable from the configured RPC for this request.</p>
+      ) : null}
     </section>
   );
+}
+
+function formatTimestamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "On-chain event";
+  return new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(date);
 }
