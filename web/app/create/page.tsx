@@ -2,11 +2,11 @@ import { CreateNFTForm } from "@/components/CreateNFTForm";
 
 export default function CreatePage() {
   return (
-    <main className="pageShell innerPage narrowPage">
-      <div className="pageIntro">
-        <span className="pageKicker">Create / ERC-721</span>
-        <h1>Mint a work.</h1>
-        <p>Upload the asset, publish its metadata to IPFS, then commit the resulting <code>ipfs://</code> URI to the AegisMint ERC-721 contract.</p>
+    <main className="pageShell innerPage narrowPage premiumCreatePage">
+      <div className="pageIntro premiumPageIntro">
+        <span className="pageKicker">Create · ERC-721 · IPFS</span>
+        <h1>Turn a work into<br />an on-chain record.</h1>
+        <p>Publish the asset and metadata to IPFS, then mint the resulting <code>ipfs://</code> URI directly into the verified AegisMint ERC-721 collection on Sepolia.</p>
       </div>
       <CreateNFTForm />
     </main>
