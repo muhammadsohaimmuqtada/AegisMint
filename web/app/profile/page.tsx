@@ -1,5 +1,9 @@
-import { ProfileDashboard } from "@/components/ProfileDashboard";
+import { PortfolioPageClient } from "@/components/PortfolioPageClient";
 
 export default function ProfilePage() {
-  return <main className="pageShell innerPage"><ProfileDashboard /></main>;
+  return (
+    <main className="pageShell portfolioPage">
+      <PortfolioPageClient />
+    </main>
+  );
 }

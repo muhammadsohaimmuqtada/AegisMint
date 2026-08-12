@@ -18,7 +18,16 @@ export function Header() {
         <Link href="/explore">Market</Link>
         <Link href="/create">Create</Link>
         <Link href="/profile">Portfolio</Link>
-        <Link href="/#protocol">Resources <span aria-hidden="true">⌄</span></Link>
+        <details className="resourceMenu">
+          <summary>Resources <span aria-hidden="true">⌄</span></summary>
+          <div className="resourceMenuPanel">
+            <Link href="/resources"><strong>Resource index</strong><small>Protocol reference</small></Link>
+            <Link href="/resources#protocol"><strong>Protocol</strong><small>Mint → list → settle</small></Link>
+            <Link href="/resources#contracts"><strong>Contracts</strong><small>Live Sepolia deployment</small></Link>
+            <Link href="/resources#storage"><strong>Storage</strong><small>IPFS asset + metadata</small></Link>
+            <Link href="/resources#security"><strong>Security</strong><small>Marketplace invariants</small></Link>
+          </div>
+        </details>
       </nav>
 
       <form className="headerSearch" action="/explore" role="search">
@@ -32,7 +41,7 @@ export function Header() {
 
       <div className="headerActions">
         <Link className="headerTextLink" href="/#market-activity">Stats</Link>
-        <Link className="headerTextLink" href="/#protocol">About</Link>
+        <Link className="headerTextLink" href="/resources">About</Link>
         <WalletButton />
         <span className="themeGlyph" aria-hidden="true">◔</span>
       </div>
