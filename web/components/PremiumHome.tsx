@@ -131,7 +131,7 @@ export function PremiumHome() {
           <p>AegisMint is an ERC-721 marketplace for collectible digital art. Ownership, provenance and settlement remain independently verifiable.</p>
           <div className="premiumHeroActions">
             <Link className="premiumPrimary" href="/explore">Explore Market <span>↗</span></Link>
-            <Link className="premiumSecondary" href="/#protocol">Learn More <span>↗</span></Link>
+            <Link className="premiumSecondary" href="/resources#protocol">Learn More <span>↗</span></Link>
           </div>
           <div className="premiumCapabilityRow" id="protocol">
             <Capability icon="cube" title="ERC-721" subtitle="Standard" />
@@ -157,9 +157,9 @@ export function PremiumHome() {
           <MarketSnapshot stats={stats} series={activitySeries} />
         </Panel>
 
-        <Panel title="Recent Activity" action={<Link href="/explore">View all</Link>} className="recentPanel">
+        <Panel title="Recent Activity" action={<Link href="/resources#verification">Verify</Link>} className="recentPanel">
           <div className="recentActivityList">
-            {activity.length ? activity.map((row) => <ActivityItem row={row} key={row.key} />) : <PanelEmpty text="No recent contract events." />}
+            {activity.length ? activity.map((row) => <ActivityItem row={row} key={row.key} />) : <PanelEmpty text="No marketplace events in the latest 120 blocks." />}
           </div>
         </Panel>
 
