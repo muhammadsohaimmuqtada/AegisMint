@@ -50,19 +50,18 @@ export function NFTCard({ listing }: { listing: Listing }) {
         ) : (
           <div className="nftPlaceholder">AEGIS / {listing.tokenId.toString()}</div>
         )}
-        <span className="verifiedBadge">On-chain</span>
       </div>
       <div className="nftBody">
         <div className="nftTitleRow">
           <div>
-            <span className="nftCollection">AegisMint</span>
+            <span className="nftCollection">Work #{listing.tokenId.toString()}</span>
             <h3>{metadata?.name || `Token #${listing.tokenId}`}</h3>
           </div>
-          <span className="availableBadge">Available</span>
+          <span className="availableBadge">Listed</span>
         </div>
         <div className="nftPriceRow">
           <div>
-            <span>Price</span>
+            <span>Ask</span>
             <strong>{formatEther(listing.price)} ETH</strong>
           </div>
           <div className="sellerCell">
