@@ -5,6 +5,7 @@ import { parseAbiItem, zeroAddress, type Address } from "viem";
 import { usePublicClient } from "wagmi";
 import { MARKETPLACE_ADDRESS, contractsConfigured } from "@/lib/contracts";
 import { shortAddress } from "@/lib/ipfs";
+import { getLogsInChunks } from "@/lib/logs";
 
 const transferEvent = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)");
 const listedEvent = parseAbiItem("event NFTListed(uint256 indexed listingId, address indexed nftContract, uint256 indexed tokenId, address seller, uint256 price)");
@@ -33,11 +34,20 @@ export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address
     async function load() {
       setLoading(true);
       try {
+        const latestBlock = await publicClient.getBlockNumber();
         const [transfers, listings, sales, cancellations] = await Promise.all([
-          publicClient.getLogs({ address: nftContract, event: transferEvent, args: { tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
-          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
-          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
-          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: cancelledEvent, args: { nftContract, tokenId }, fromBlock: deploymentBlock, toBlock: "latest" }),
+          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: nftContract, event: transferEvent, args: { tokenId }, fromBlock: start, toBlock: end }),
+          ),
+          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, args: { nftContract, tokenId }, fromBlock: start, toBlock: end }),
+          ),
+          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, args: { nftContract, tokenId }, fromBlock: start, toBlock: end }),
+          ),
+          getLogsInChunks(deploymentBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: cancelledEvent, args: { nftContract, tokenId }, fromBlock: start, toBlock: end }),
+          ),
         ]);
 
         const rows: Activity[] = [];
