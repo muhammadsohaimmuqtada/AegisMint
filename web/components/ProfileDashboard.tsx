@@ -6,6 +6,7 @@ import { formatEther, parseAbiItem } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { MARKETPLACE_ADDRESS, NFT_ADDRESS, contractsConfigured, marketplaceAbi, nftAbi, type Listing } from "@/lib/contracts";
 import { shortAddress } from "@/lib/ipfs";
+import { getLogsInChunks } from "@/lib/logs";
 
 const mintedEvent = parseAbiItem("event NFTMinted(uint256 indexed tokenId, address indexed creator, string tokenURI)");
 const listedEvent = parseAbiItem("event NFTListed(uint256 indexed listingId, address indexed nftContract, uint256 indexed tokenId, address seller, uint256 price)");
@@ -43,10 +44,17 @@ export function ProfileDashboard() {
       setError("");
       try {
         const fromBlock = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK || "0");
+        const latestBlock = await publicClient.getBlockNumber();
         const [mints, listingLogs, saleLogs] = await Promise.all([
-          publicClient.getLogs({ address: NFT_ADDRESS, event: mintedEvent, fromBlock, toBlock: "latest" }),
-          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, fromBlock, toBlock: "latest" }),
-          publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, fromBlock, toBlock: "latest" }),
+          getLogsInChunks(fromBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: NFT_ADDRESS, event: mintedEvent, fromBlock: start, toBlock: end }),
+          ),
+          getLogsInChunks(fromBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: listedEvent, fromBlock: start, toBlock: end }),
+          ),
+          getLogsInChunks(fromBlock, latestBlock, (start, end) =>
+            publicClient.getLogs({ address: MARKETPLACE_ADDRESS, event: soldEvent, fromBlock: start, toBlock: end }),
+          ),
         ]);
 
         const tokenIds = [...new Set(mints.map((log) => log.args.tokenId).filter((id): id is bigint => id !== undefined))];
