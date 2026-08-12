@@ -4,6 +4,7 @@ import "./globals-extra.css";
 import "./editorial.css";
 import "./premium-gallery.css";
 import "./resources-portfolio.css";
+import "./qa-polish.css";
 import { Header } from "@/components/Header";
 import { Providers } from "@/components/Providers";
 
