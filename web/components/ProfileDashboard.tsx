@@ -105,41 +105,41 @@ export function ProfileDashboard() {
   }, [client, address]);
 
   if (!isConnected) {
-    return <div className="emptyState"><span className="eyebrow">Wallet dashboard</span><h3>Connect MetaMask to continue</h3><p>Your owned, listed, purchased and sold NFTs are derived from live Sepolia state and contract events.</p></div>;
+    return <div className="emptyState"><span className="eyebrow">Portfolio</span><h3>Connect a wallet</h3><p>Holdings, active listings and market history are reconstructed from Sepolia state and contract events.</p></div>;
   }
   if (!contractsConfigured) {
-    return <div className="emptyState"><h3>Contracts are not configured</h3><p>Dashboard indexing activates after the Sepolia deployment.</p></div>;
+    return <div className="emptyState"><h3>Portfolio unavailable</h3><p>The Sepolia deployment is not configured for this environment.</p></div>;
   }
 
   return (
     <div className="dashboardStack">
       <div className="profileHero">
-        <div><span className="eyebrow">Connected account</span><h1>{shortAddress(address)}</h1><p>Live portfolio reconstructed from ERC-721 ownership and AegisMarketplace events.</p></div>
-        <span className="networkPill"><i /> Sepolia</span>
+        <div><span className="eyebrow">Portfolio</span><h1>{shortAddress(address)}</h1><p>ERC-721 holdings and AegisMint market history.</p></div>
+        <span className="networkPill"><i /> Ethereum Sepolia</span>
       </div>
 
       <div className="statsGrid dashboardStats">
-        <DashStat label="Owned" value={state.owned.length.toString()} />
-        <DashStat label="Active listings" value={state.activeListings.length.toString()} />
-        <DashStat label="Purchased" value={state.purchased.length.toString()} />
-        <DashStat label="Sales volume" value={`${Number(formatEther(state.salesVolume)).toFixed(3)} ETH`} />
+        <DashStat label="Held" value={state.owned.length.toString()} />
+        <DashStat label="Listed" value={state.activeListings.length.toString()} />
+        <DashStat label="Acquired" value={state.purchased.length.toString()} />
+        <DashStat label="Sold volume" value={`${Number(formatEther(state.salesVolume)).toFixed(3)} ETH`} />
       </div>
 
-      {loading ? <div className="emptyState"><p>Indexing on-chain activity…</p></div> : null}
+      {loading ? <div className="emptyState"><p>Reading market history…</p></div> : null}
       {error ? <div className="txStatus error"><strong>Indexing error</strong><p>{error}</p></div> : null}
 
       {!loading ? (
         <div className="dashboardSections">
-          <PortfolioSection title="My NFTs" subtitle="Current ERC-721 ownership" empty="No NFTs owned by this wallet.">
+          <PortfolioSection title="Holdings" subtitle="Current ownership" empty="No works currently held by this wallet.">
             {state.owned.map((tokenId) => <TokenLink tokenId={tokenId} key={tokenId.toString()} />)}
           </PortfolioSection>
-          <PortfolioSection title="My listings" subtitle="Active escrow listings" empty="No active listings.">
+          <PortfolioSection title="Listings" subtitle="Active escrow" empty="No active listings.">
             {state.activeListings.map((listing) => <TokenLink tokenId={listing.tokenId} listingId={listing.id} price={listing.price} key={listing.id.toString()} />)}
           </PortfolioSection>
-          <PortfolioSection title="Purchased" subtitle="Historical successful purchases" empty="No purchases yet.">
+          <PortfolioSection title="Acquisitions" subtitle="Purchase history" empty="No completed purchases.">
             {state.purchased.map((sale) => <TokenLink tokenId={sale.tokenId} listingId={sale.listingId} price={sale.price} key={`buy-${sale.listingId}`} />)}
           </PortfolioSection>
-          <PortfolioSection title="Sold" subtitle="Historical successful sales" empty="No completed sales yet.">
+          <PortfolioSection title="Sales" subtitle="Sale history" empty="No completed sales.">
             {state.sold.map((sale) => <TokenLink tokenId={sale.tokenId} listingId={sale.listingId} price={sale.price} key={`sold-${sale.listingId}`} />)}
           </PortfolioSection>
         </div>
@@ -158,5 +158,5 @@ function PortfolioSection({ title, subtitle, empty, children }: { title: string;
 }
 
 function TokenLink({ tokenId, listingId, price }: { tokenId: bigint; listingId?: bigint; price?: bigint }) {
-  return <Link className="tokenRow" href={`/nft/${tokenId.toString()}${listingId ? `?listing=${listingId}` : ""}`}><span><strong>Token #{tokenId.toString()}</strong>{listingId ? <small>Listing #{listingId.toString()}</small> : <small>ERC-721</small>}</span>{price !== undefined ? <strong>{formatEther(price)} ETH</strong> : <span>Open →</span>}</Link>;
+  return <Link className="tokenRow" href={`/nft/${tokenId.toString()}${listingId ? `?listing=${listingId}` : ""}`}><span><strong>Work #{tokenId.toString()}</strong>{listingId ? <small>Listing #{listingId.toString()}</small> : <small>ERC-721</small>}</span>{price !== undefined ? <strong>{formatEther(price)} ETH</strong> : <span>Open →</span>}</Link>;
 }
