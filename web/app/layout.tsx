@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./globals-extra.css";
+import "./editorial.css";
 import { Header } from "@/components/Header";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "AegisMint — Verified NFT Marketplace",
-  description: "Security-first ERC-721 marketplace on Ethereum Sepolia with IPFS provenance.",
+  title: "AegisMint — On-chain Art Market",
+  description: "ERC-721 art market and ownership registry on Ethereum Sepolia.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -14,14 +15,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <Providers>
-          <div className="ambient ambientOne" />
-          <div className="ambient ambientTwo" />
           <Header />
           {children}
           <footer className="siteFooter">
             <div className="brand footerBrand"><span className="brandMark">A</span><span>AegisMint</span></div>
-            <p>ERC-721 ownership. IPFS metadata. Sepolia settlement. Verifiable by design.</p>
-            <span>Built for transparent digital ownership.</span>
+            <p>Ethereum Sepolia · ERC-721 · IPFS</p>
+            <span>Ownership on the record.</span>
           </footer>
         </Providers>
       </body>

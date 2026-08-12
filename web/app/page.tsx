@@ -6,27 +6,26 @@ import { MarketplaceStats } from "@/components/MarketplaceStats";
 export default function Home() {
   return (
     <main>
-      <section className="hero pageShell">
+      <section className="hero pageShell editorialHero">
         <div className="heroCopy">
-          <div className="heroBadge"><span /> Verified digital ownership on Sepolia</div>
-          <h1>Collect art.<br /><em>Verify everything.</em></h1>
-          <p>A security-first ERC-721 marketplace where every asset, listing, sale and ownership transition can be independently verified on-chain.</p>
+          <span className="heroKicker">Digital ownership / Ethereum Sepolia</span>
+          <h1>Art ownership.<br /><span className="quiet">On the record.</span></h1>
+          <p>AegisMint is an ERC-721 market where artwork, ownership, listings and sales remain independently inspectable from the chain and IPFS.</p>
           <div className="heroActions">
-            <Link className="primaryButton" href="/explore">Explore marketplace</Link>
-            <Link className="secondaryButton" href="/create">Create an NFT</Link>
+            <Link className="primaryButton" href="/explore">Enter market</Link>
+            <Link className="secondaryButton" href="/create">Mint work</Link>
           </div>
           <div className="heroProof">
-            <span><i>✓</i> ERC-721</span>
-            <span><i>✓</i> IPFS metadata</span>
-            <span><i>✓</i> Escrow settlement</span>
-            <span><i>✓</i> On-chain provenance</span>
+            <span><i>●</i> ERC-721</span>
+            <span><i>●</i> IPFS</span>
+            <span><i>●</i> Escrow</span>
+            <span><i>●</i> Provenance</span>
           </div>
         </div>
-        <div className="heroVisual" aria-hidden="true">
-          <div className="heroOrb"><span className="orbCore">A</span><span className="orbit orbitOne" /><span className="orbit orbitTwo" /></div>
-          <div className="floatingCard fcOne"><span>Integrity</span><strong>IPFS</strong><small>Content-addressed metadata</small></div>
-          <div className="floatingCard fcTwo"><span>Standard</span><strong>ERC-721</strong><small>Verifiable ownership</small></div>
-          <div className="floatingCard fcThree"><span>Network</span><strong>Sepolia</strong><small>Ethereum testnet</small></div>
+
+        <div className="heroFeature">
+          <div className="heroFeatureHeader"><span>Currently listed</span><strong>Sepolia market</strong></div>
+          <ContractGate><MarketplaceGrid limit={1} /></ContractGate>
         </div>
       </section>
 
@@ -36,18 +35,18 @@ export default function Home() {
 
       <section className="pageShell sectionBlock">
         <div className="sectionHeading splitHeading">
-          <div><span className="eyebrow">Live marketplace</span><h2>Available now</h2></div>
-          <Link href="/explore">View all →</Link>
+          <div><span className="sectionKicker">Market</span><h2>Available works</h2></div>
+          <Link href="/explore">View market →</Link>
         </div>
-        <ContractGate><MarketplaceGrid limit={8} /></ContractGate>
+        <ContractGate><MarketplaceGrid limit={6} /></ContractGate>
       </section>
 
       <section className="pageShell sectionBlock trustStrip">
-        <div><span className="eyebrow">The Aegis difference</span><h2>Trust is a feature you can inspect.</h2></div>
+        <div><span className="sectionKicker">Market structure</span><h2>The record matters as much as the object.</h2></div>
         <div className="featureGrid">
-          <Feature n="01" title="On-chain provenance" text="Mint, listing, sale and ERC-721 transfer events form a reconstructable ownership trail." />
-          <Feature n="02" title="IPFS integrity" text="Both digital assets and metadata are content-addressed with ipfs:// CIDs, not mutable database records." />
-          <Feature n="03" title="Defensive settlement" text="Escrow, reentrancy protection, strict pricing and payout fallback protect marketplace state transitions." />
+          <Feature n="01" title="Ownership history" text="Mint, transfer, listing and sale events form a public provenance trail for each token." />
+          <Feature n="02" title="Content-addressed media" text="Artwork and metadata resolve from IPFS CIDs rather than mutable marketplace inventory." />
+          <Feature n="03" title="Escrow settlement" text="Listings custody the token on-chain and settle exact-price purchases through the marketplace contract." />
         </div>
       </section>
     </main>
