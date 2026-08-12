@@ -58,7 +58,7 @@ export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address
             key: `${log.transactionHash}-transfer-${log.logIndex}`,
             block: log.blockNumber,
             label: from === zeroAddress ? "Minted" : "Ownership transfer",
-            detail: from === zeroAddress ? `Created by ${shortAddress(to)}` : `${shortAddress(from)} → ${shortAddress(to)}`,
+            detail: from === zeroAddress ? `Creator ${shortAddress(to)}` : `${shortAddress(from)} → ${shortAddress(to)}`,
           });
         }
         for (const log of listings) {
@@ -66,14 +66,14 @@ export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address
             key: `${log.transactionHash}-listed-${log.logIndex}`,
             block: log.blockNumber,
             label: "Listed",
-            detail: `Listing #${log.args.listingId?.toString()} created by ${shortAddress(log.args.seller)}`,
+            detail: `Listing #${log.args.listingId?.toString()} · seller ${shortAddress(log.args.seller)}`,
           });
         }
         for (const log of sales) {
           rows.push({
             key: `${log.transactionHash}-sold-${log.logIndex}`,
             block: log.blockNumber,
-            label: "Sold",
+            label: "Sale settled",
             detail: `${shortAddress(log.args.seller)} → ${shortAddress(log.args.buyer)}`,
           });
         }
@@ -104,11 +104,11 @@ export function ProvenancePanel({ nftContract, tokenId }: { nftContract: Address
   return (
     <section className="trustPanel">
       <div className="sectionHeading compactHeading">
-        <span className="eyebrow">On-chain provenance</span>
-        <h2>Immutable activity trail</h2>
+        <span className="eyebrow">Provenance</span>
+        <h2>Transaction history</h2>
       </div>
       {loading ? <p className="muted">Reading contract events…</p> : null}
-      {!loading && !activity.length ? <p className="muted">No event history returned by the configured RPC.</p> : null}
+      {!loading && !activity.length ? <p className="muted">No recorded activity returned by the configured RPC.</p> : null}
       <div className="timeline">
         {activity.map((item) => (
           <div className="timelineItem" key={item.key}>
