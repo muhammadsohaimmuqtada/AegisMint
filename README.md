@@ -4,7 +4,7 @@
 
 AegisMint is a full NFT lifecycle application: creators upload immutable assets and metadata to IPFS, mint ERC-721 tokens, list them through an escrow marketplace, sell to another wallet, cancel listings, and resell purchased NFTs. The web application reconstructs ownership, listings, purchases, sales, and provenance from live blockchain state and events rather than seeded records.
 
-> Status: active development. Local contracts, tests, frontend, IPFS API routes, deployment scripts, and documentation are present. Sepolia addresses and the Vercel URL are intentionally left blank until final deployment.
+> Status: deployed on Ethereum Sepolia. Both smart contracts are publicly verified on Etherscan, Blockscout, and Sourcify. Final Vercel deployment and public demo links will be added after the end-to-end acceptance flow is completed.
 
 ## Why AegisMint is different
 
@@ -115,8 +115,7 @@ Requirements: Node.js 22+, npm, and MetaMask for browser flows.
 ```bash
 cp .env.example .env
 cp web/.env.example web/.env.local
-npm install
-npm --prefix web install
+npm run install:all
 npm run compile
 npm test
 npm run abi:export
@@ -164,6 +163,7 @@ The test suite covers minting, creator provenance, listing escrow, missing appro
 ```bash
 npm run compile
 npm test
+npm run deploy:preflight
 npm run deploy:sepolia
 npm run abi:export
 ```
@@ -174,11 +174,13 @@ The deploy script also writes a non-secret `deployments/<chainId>.json` record c
 
 | Item | Value |
 | --- | --- |
-| Network | Ethereum Sepolia |
-| AegisNFT | `TBD` |
-| AegisMarketplace | `TBD` |
-| NFT Etherscan | `TBD` |
-| Marketplace Etherscan | `TBD` |
+| Network | Ethereum Sepolia (`11155111`) |
+| Deployment block | `11470865` |
+| AegisNFT | `0x78FF23e3F717dfb75A0535ecD9251cf6Ad3eA8ae` |
+| AegisMarketplace | `0xDe8E21f09423cE0D6E9324756dB1274689817214` |
+| NFT Etherscan | https://sepolia.etherscan.io/address/0x78FF23e3F717dfb75A0535ecD9251cf6Ad3eA8ae#code |
+| Marketplace Etherscan | https://sepolia.etherscan.io/address/0xDe8E21f09423cE0D6E9324756dB1274689817214#code |
+| Marketplace fee | `250 bps (2.5%)` |
 | Vercel app | `TBD` |
 | Demo video | `TBD` |
 | LinkedIn post | `TBD` |
