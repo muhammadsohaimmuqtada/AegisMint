@@ -4,7 +4,7 @@
 
 AegisMint is a full NFT lifecycle application: creators upload immutable assets and metadata to IPFS, mint ERC-721 tokens, list them through an escrow marketplace, sell to another wallet, cancel listings, and resell purchased NFTs. The web application reconstructs ownership, listings, purchases, sales, and provenance from live blockchain state and events rather than seeded records.
 
-> Status: deployed on Ethereum Sepolia. Both smart contracts are publicly verified on Etherscan, Blockscout, and Sourcify. Final Vercel deployment and public demo links will be added after the end-to-end acceptance flow is completed.
+> Status: live on Ethereum Sepolia and Vercel. Both smart contracts are publicly verified on Etherscan, Blockscout, and Sourcify, and the full two-wallet mint → list → buy → resell lifecycle has been exercised on Sepolia.
 
 ## Why AegisMint is different
 
@@ -181,7 +181,7 @@ The deploy script also writes a non-secret `deployments/<chainId>.json` record c
 | NFT Etherscan | https://sepolia.etherscan.io/address/0x78FF23e3F717dfb75A0535ecD9251cf6Ad3eA8ae#code |
 | Marketplace Etherscan | https://sepolia.etherscan.io/address/0xDe8E21f09423cE0D6E9324756dB1274689817214#code |
 | Marketplace fee | `250 bps (2.5%)` |
-| Vercel app | `TBD` |
+| Vercel app | https://aegis-mint.vercel.app |
 | Demo video | `TBD` |
 | LinkedIn post | `TBD` |
 
