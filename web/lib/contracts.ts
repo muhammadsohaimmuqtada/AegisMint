@@ -110,6 +110,20 @@ export const marketplaceAbi = [
   },
   {
     type: "function",
+    name: "withdrawProceeds",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "recipient", type: "address" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "pendingProceeds",
+    stateMutability: "view",
+    inputs: [{ name: "seller", type: "address" }],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "getListing",
     stateMutability: "view",
     inputs: [{ name: "listingId", type: "uint256" }],
